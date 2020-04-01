@@ -119,7 +119,49 @@ async function createTransactionTable() {
 }
 
 
-(async function() {
+// Transform transaction data stored in files
+// into a list of one-hot encoded input vectors
+export function generateInputVectors(): number[][] {
+  // Retrieving/parsing transactions from file
+  let transactionTable = await createTransactionTable();
+  let transactions: number[][] = Object.values(transactionTable);
+
+  // Creating a set of known inventory items
+  let knownItems: Set<number> | Array<number> = new Set();
+  for (let transaction of transactions) {
+    for (let item of transaction) {
+      knownItems.add(item);
+    }
+  }
+
+  // Converting the set of known items into an array
+  knownItems = Array.from(knownItems);
+
+  // Creating an array to hold the return value
+  let inputVectors = [];
+
+  for (let transaction of transactions) {
+    // Creating a one-hot encoding of each transaction,
+    // using the list of known items as vocabulary
+    let vector = new Array(knownItems.length).fill(0);
+
+    // Populating the vector with the frequency that each known item
+    // occurs in the transaction
+    for (let item of transaction) {
+      let index = knownItems.findIndex(knownItem => knownItem == item);
+      if (index !== -1) {
+        vector[index] += 1;
+      }
+    }
+
+    // Add the new one-hot encoding to our return value
+    inputVectors.push(vector);
+  }
+
+  return inputVectors;
+}
+
+async function doLiftCalculationExample() {
   // Retrieve transactions
   let transactionTable = await createTransactionTable();
   let transactions: number[][] = Object.values(transactionTable);
@@ -144,5 +186,5 @@ async function createTransactionTable() {
       console.log({ productId, lift });
     }
   }
+}
 
-})()

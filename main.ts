@@ -1,10 +1,9 @@
 
 const fs = require('fs');
 
-import { allUniquePairs, pairsAreEqual } from './pairs';
-
 // An object for reading and writing order data locally
 const orderFile: any = {}
+
 orderFile.read = function(filepath:string): object {
   try {
     const text = fs.readFileSync(filepath, 'utf8');
@@ -13,6 +12,7 @@ orderFile.read = function(filepath:string): object {
     return {};
   }
 };
+
 orderFile.write = function(filepath:string, orders:object) {
   fs.writeFileSync(filepath, JSON.stringify(orders, null, 2));
 };
@@ -24,28 +24,9 @@ interface TransactionTable {
   [id: string]: number[];
 }
 
-// Create a list of all the variant id pairs that were purchased together
-function allLineItemCombinations(orders: TransactionTable) {
-  const pairs = [];
-  for (const variantIds of Object.values(orders)) {
-    const lineItemPairs = allUniquePairs(Array.from(variantIds));
-    pairs.push(...lineItemPairs);
-  };
-  return pairs;
-}
-
-function setsAreEqual(setA, setB) {
-  
-}
-
 // Given two sets of items, A, B, and a master list of similar sets, M
 // we want to know how strongly associated A and B are with respect to M.
 // A numerical representation of this association is called "lift".
-//
-// O(m(300)* a(1)  * b(1))
-//
-// a [2398572]
-// b [57293845, 119283752987 ...]
 function calculateLift(a: number[], b: number[], m: number[][]): number {
 
   // The number of times that `a` occurs in `m`
@@ -88,7 +69,6 @@ function calculateLift(a: number[], b: number[], m: number[][]): number {
 
   }
 
-
   // https://en.wikipedia.org/wiki/Association_rule_learning#Support
   let supportA = sigmaA / m.length;
   let supportB = sigmaB / m.length;
@@ -102,8 +82,6 @@ function calculateLift(a: number[], b: number[], m: number[][]): number {
 
   return lift;
 }
-
-// O(n)
 
 // Return n of the most frequently occuring numbers in a list
 function mostFrequentValues(list: number[], amount: number = 1): number[] {
@@ -132,51 +110,38 @@ function mostFrequentValues(list: number[], amount: number = 1): number[] {
     .slice(frequenciesArray.length - amount);
 }
 
-// Create a transaction table by combining an api call for new orders
-// with existing orders that are stored locally as a json file
+// Create a transaction table reading orders from 
+// a local json file
 async function createTransactionTable() {
   const filename = 'transaction_table.json';
   const existingTransactions: TransactionTable = orderFile.read(filename);
   return existingTransactions;
 }
 
-// TODO frontload variant frequency list
-// TODO replace array with sets / maps
-// TODO cache highest lifted variant ids for each variant
-// TODO cap V, T
-//
-// Gain: Compare with unpopular, but potentially relevant variants
-// Gain: Keep frequency sorted variant ids in memory
-//
-// t * v
-//
-// a(1) * b(V) * t
 
 (async function() {
   // Retrieve transactions
-  let allTransactions: TransactionTable = await createTransactionTable();
-  let transactions: number[][] = Object.values(allTransactions);
+  let transactionTable = await createTransactionTable();
+  let transactions: number[][] = Object.values(transactionTable);
 
-  // O(n*m)
-  // Pull all variantIds (non-unique) from transactions
-  let variantIds: number[] = [];
+  // Pull all productIds (non-unique) from transactions
+  let productIds: number[] = [];
   for (let transaction of transactions) {
-    for (let variantId of transaction) {
-      variantIds.push(variantId);
+    for (let productId of transaction) {
+      productIds.push(productId);
     }
   }
 
-  const associableVariantIds = mostFrequentValues(variantIds, 100);
+  const associableVariantIds = mostFrequentValues(productIds, 100);
 
-  // A set of variantIds that we want to associate with known variantIds
-  // Wooden spoon
+  // A set of productIds that we want to associate with known productIds
   let input = [16935914948];
 
-  // Print lift values for associable variant ids
-  for (let variantId of associableVariantIds) {
-    if (false == input.includes(variantId)) {
-      const lift = calculateLift([variantId], input, transactions);
-      console.log({ variantId, lift });
+  transactionTable// Print lift values for associable product ids
+  for (let productId of associableVariantIds) {
+    if (false == input.includes(productId)) {
+      const lift = calculateLift([productId], input, transactions);
+      console.log({ productId, lift });
     }
   }
 

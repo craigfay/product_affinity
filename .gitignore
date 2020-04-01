@@ -1,0 +1,5 @@
+secrets.js
+refresh.ts
+node_modules
+*.swp
+*.swo
